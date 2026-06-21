@@ -114,23 +114,45 @@ export default function Route() {
 
       <div className="bg-white rounded-garden-lg shadow-garden p-3 mb-4">
         <svg viewBox="0 0 100 100" className="w-full">
-          <rect x="0" y="0" width="100" height="100" rx="8" fill="#f0f7f1" />
+          <style>
+            {`
+              @keyframes routePulseRing {
+                0%, 100% { transform: scale(0.72); opacity: 0.6; }
+                50% { transform: scale(1.28); opacity: 0.2; }
+              }
+              @keyframes routeFlowerBloom {
+                0% { transform: scale(0); }
+                100% { transform: scale(1); }
+              }
+              .route-pulse-ring {
+                animation: routePulseRing 2s ease-in-out infinite;
+              }
+              .route-flower-bloom {
+                animation: routeFlowerBloom 0.5s ease-out forwards;
+                transform-origin: center;
+                transform-box: fill-box;
+              }
+            `}
+          </style>
+          <rect x={0} y={0} width={100} height={100} rx={8} fill="#f0f7f1" />
           <DecorativeElements />
-          <path d={pathD} fill="none" stroke="#8B6914" strokeWidth="1.5" strokeDasharray="3,2" opacity="0.5" />
+          <path d={pathD} fill="none" stroke="#8B6914" strokeWidth={1.5} strokeDasharray="3 2" opacity={0.5} />
           {nodes.map((node, i) => {
             const visited = i < currentIdx
             const isCurrent = i === currentIdx
+            const nX = Number(node.x) || 0
+            const nY = Number(node.y) || 0
             return (
               <g key={node.id}>
                 {visited && (
-                  <motion.g initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                    <circle cx={node.x} cy={node.y - 4} r="2" fill="#F2B5C8" opacity="0.7" />
-                    <line x1={node.x} y1={node.y - 2.5} x2={node.x} y2={node.y - 1} stroke="#5daa60" strokeWidth="0.5" />
-                  </motion.g>
+                  <g className="route-flower-bloom">
+                    <circle cx={nX} cy={nY - 4} r={2} fill="#F2B5C8" opacity={0.7} />
+                    <line x1={nX} y1={nY - 2.5} x2={nX} y2={nY - 1} stroke="#5daa60" strokeWidth={0.5} />
+                  </g>
                 )}
                 <circle
-                  cx={node.x}
-                  cy={node.y}
+                  cx={nX}
+                  cy={nY}
                   r={isCurrent ? 5 : 4}
                   fill={visited ? '#5daa60' : isCurrent ? '#3A7D44' : '#d1af6c'}
                   opacity={visited || isCurrent ? 1 : 0.5}
@@ -138,41 +160,45 @@ export default function Route() {
                   strokeWidth={isCurrent ? 1.5 : 0}
                 />
                 {isCurrent && (
-                  <motion.circle
-                    cx={node.x ?? 0}
-                    cy={node.y ?? 0}
-                    r={7}
-                    fill="none"
-                    stroke="#3A7D44"
-                    strokeWidth={0.8}
-                    animate={{ r: [5, 9, 5], opacity: [0.6, 0.2, 0.6] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  />
+                  <g style={{ transformOrigin: `${nX}px ${nY}px`, transformBox: 'fill-box' }} className="route-pulse-ring">
+                    <circle
+                      cx={nX}
+                      cy={nY}
+                      r={7}
+                      fill="none"
+                      stroke="#3A7D44"
+                      strokeWidth={0.8}
+                    />
+                  </g>
                 )}
-                <g transform={`translate(${node.x}, ${node.y})`}>
+                <g transform={`translate(${nX}, ${nY})`}>
                   <g transform="translate(-2, -2)">{iconMap[node.icon]}</g>
                 </g>
-                <text x={node.x} y={node.y + 8} textAnchor="middle" fontSize="3.5" fill="#1e3f23" fontFamily="'Noto Sans SC', sans-serif">
+                <text x={nX} y={nY + 8} textAnchor="middle" fontSize={3.5} fill="#1e3f23" fontFamily="'Noto Sans SC', sans-serif">
                   {node.name}
                 </text>
               </g>
             )
           })}
           {!completed && (
-            <motion.circle
-              cx={currentNode.x ?? 0}
-              cy={currentNode.y ?? 0}
+            <circle
+              cx={Number(currentNode.x) || 0}
+              cy={Number(currentNode.y) || 0}
               r={2}
               fill="#E8913A"
-              animate={{
-                cx: isWalking
-                  ? nodes[Math.min(currentIdx + 1, nodes.length - 1)]?.x ?? currentNode.x ?? 0
-                  : currentNode.x ?? 0,
-                cy: isWalking
-                  ? nodes[Math.min(currentIdx + 1, nodes.length - 1)]?.y ?? currentNode.y ?? 0
-                  : currentNode.y ?? 0,
+              style={{
+                transformOrigin: 'center',
+                transition: `transform 1s ease-in-out`,
+                transform: `translate(${
+                  isWalking
+                    ? (Number(nodes[Math.min(currentIdx + 1, nodes.length - 1)]?.x) || Number(currentNode.x) || 0) - (Number(currentNode.x) || 0)
+                    : 0
+                }px, ${
+                  isWalking
+                    ? (Number(nodes[Math.min(currentIdx + 1, nodes.length - 1)]?.y) || Number(currentNode.y) || 0) - (Number(currentNode.y) || 0)
+                    : 0
+                }px)`,
               }}
-              transition={{ duration: 1, ease: 'easeInOut' }}
             />
           )}
         </svg>
