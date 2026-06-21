@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Users, Heart, Flower2, Sparkles, ArrowLeft, Check, ChevronRight, MessageCircle } from 'lucide-react'
+import { Users, Heart, Flower2, Sparkles, ArrowLeft, Check, ChevronRight, MessageCircle, Plus, Upload, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useGardenStore } from '@/store/gardenStore'
 
@@ -29,11 +29,51 @@ interface TrainingState {
 }
 
 export default function Faces() {
-  const { faces, updateFace, addFlower, completeFamilyTask, familyTasks } = useGardenStore()
+  const { faces, updateFace, addFace, addFlower, completeFamilyTask, familyTasks } = useGardenStore()
   const [mode, setMode] = useState<'album' | 'training'>('album')
   const [selectedFaceId, setSelectedFaceId] = useState<string | null>(null)
   const [training, setTraining] = useState<TrainingState | null>(null)
   const [showSummary, setShowSummary] = useState(false)
+  const [showUpload, setShowUpload] = useState(false)
+  const [uploadForm, setUploadForm] = useState({ name: '', relation: '', photoUrl: '' })
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showUpload) setShowUpload(false)
+        if (selectedFaceId) setSelectedFaceId(null)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [showUpload, selectedFaceId])
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const result = event.target?.result as string
+      setUploadForm(prev => ({ ...prev, photoUrl: result }))
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleAddFace = () => {
+    if (!uploadForm.name.trim() || !uploadForm.relation.trim() || !uploadForm.photoUrl) return
+    addFace({
+      id: `face-${Date.now()}`,
+      photoUrl: uploadForm.photoUrl,
+      name: uploadForm.name.trim(),
+      relation: uploadForm.relation.trim(),
+      difficulty: 1,
+      successCount: 0,
+      lastPracticed: '',
+    })
+    setUploadForm({ name: '', relation: '', photoUrl: '' })
+    setShowUpload(false)
+  }
 
   const selectedFace = faces.find((f) => f.id === selectedFaceId)
 
@@ -193,7 +233,112 @@ export default function Faces() {
             <span className="text-xs text-forest-400 bg-forest-50 px-2 py-0.5 rounded-full">{face.relation}</span>
           </motion.button>
         ))}
+        <motion.button
+          className="bg-forest-50 rounded-garden-lg border-2 border-dashed border-forest-200 p-3 flex flex-col items-center gap-2 min-h-[140px] justify-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: faces.length * 0.06 }}
+          onClick={() => setShowUpload(true)}
+          whileTap={{ scale: 0.96 }}
+        >
+          <Plus className="w-8 h-8 text-forest-300" />
+          <span className="text-forest-400 font-display text-sm">添加家人</span>
+        </motion.button>
       </div>
+
+      <AnimatePresence>
+        {showUpload && (
+          <motion.div
+            className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowUpload(false)}
+          >
+            <motion.div
+              className="bg-white rounded-garden-lg shadow-garden-lg p-6 w-full max-w-sm"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-xl font-display text-forest-700">添加家人照片</h3>
+                <button
+                  onClick={() => setShowUpload(false)}
+                  className="p-2 rounded-full hover:bg-forest-50 text-forest-400"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+
+              <div className="mb-4">
+                {uploadForm.photoUrl ? (
+                  <div className="relative w-28 h-28 mx-auto mb-3">
+                    <img
+                      src={uploadForm.photoUrl}
+                      alt="预览"
+                      className="w-full h-full object-cover rounded-full border-4 border-sunset-300 shadow-warm"
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute -bottom-1 -right-1 w-8 h-8 bg-forest-500 text-white rounded-full flex items-center justify-center shadow-garden"
+                    >
+                      <Upload className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full h-28 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-forest-200 rounded-garden-lg bg-forest-50/50 hover:bg-forest-50 transition-colors"
+                  >
+                    <Upload className="w-8 h-8 text-forest-300" />
+                    <span className="text-forest-400 font-body text-sm">点击上传照片</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-forest-600 font-body text-sm mb-1">姓名</label>
+                  <input
+                    type="text"
+                    value={uploadForm.name}
+                    onChange={(e) => setUploadForm(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="请输入姓名"
+                    className="w-full px-4 py-3 rounded-garden bg-forest-50 font-body text-forest-700 placeholder:text-forest-300 outline-none focus:ring-2 focus:ring-forest-300"
+                  />
+                </div>
+                <div>
+                  <label className="block text-forest-600 font-body text-sm mb-1">关系</label>
+                  <input
+                    type="text"
+                    value={uploadForm.relation}
+                    onChange={(e) => setUploadForm(prev => ({ ...prev, relation: e.target.value }))}
+                    placeholder="如：儿子、女儿、老伴"
+                    className="w-full px-4 py-3 rounded-garden bg-forest-50 font-body text-forest-700 placeholder:text-forest-300 outline-none focus:ring-2 focus:ring-forest-300"
+                  />
+                </div>
+                <button
+                  onClick={handleAddFace}
+                  disabled={!uploadForm.name.trim() || !uploadForm.relation.trim() || !uploadForm.photoUrl}
+                  className="w-full bg-forest-500 text-white py-3 rounded-garden-lg font-display text-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-forest-600 transition-colors"
+                >
+                  <Check className="w-5 h-5" /> 保存
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {selectedFace && (

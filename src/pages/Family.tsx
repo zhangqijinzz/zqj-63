@@ -60,7 +60,9 @@ export default function Family() {
     d.setDate(d.getDate() - (6 - i))
     const ds = d.toISOString().split('T')[0]
     const dayTasks = familyTasks.filter((t) => t.createdAt === ds && t.completed).length
-    return { day: ['日', '一', '二', '三', '四', '五', '六'][d.getDay()], value: dayTasks + Math.floor(Math.random() * 2) }
+    const dayFlowers = flowers.filter((f) => f.bloomDate === ds).length
+    const dayTrees = trees.filter((t) => t.date === ds).length
+    return { day: ['日', '一', '二', '三', '四', '五', '六'][d.getDay()], value: dayTasks + dayFlowers + dayTrees }
   })
   const maxDaily = Math.max(...dailyData.map((d) => d.value), 1)
   const faceSuccessTotal = faces.reduce((sum, f) => sum + f.successCount, 0)

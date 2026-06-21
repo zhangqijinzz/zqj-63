@@ -139,12 +139,12 @@ export default function Route() {
                 />
                 {isCurrent && (
                   <motion.circle
-                    cx={node.x}
-                    cy={node.y}
-                    r="7"
+                    cx={node.x ?? 0}
+                    cy={node.y ?? 0}
+                    r={7}
                     fill="none"
                     stroke="#3A7D44"
-                    strokeWidth="0.8"
+                    strokeWidth={0.8}
                     animate={{ r: [5, 9, 5], opacity: [0.6, 0.2, 0.6] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   />
@@ -160,11 +160,18 @@ export default function Route() {
           })}
           {!completed && (
             <motion.circle
-              cx={currentNode.x}
-              cy={currentNode.y}
-              r="2"
+              cx={currentNode.x ?? 0}
+              cy={currentNode.y ?? 0}
+              r={2}
               fill="#E8913A"
-              animate={{ cx: isWalking ? nodes[Math.min(currentIdx + 1, nodes.length - 1)].x : currentNode.x, cy: isWalking ? nodes[Math.min(currentIdx + 1, nodes.length - 1)].y : currentNode.y }}
+              animate={{
+                cx: isWalking
+                  ? nodes[Math.min(currentIdx + 1, nodes.length - 1)]?.x ?? currentNode.x ?? 0
+                  : currentNode.x ?? 0,
+                cy: isWalking
+                  ? nodes[Math.min(currentIdx + 1, nodes.length - 1)]?.y ?? currentNode.y ?? 0
+                  : currentNode.y ?? 0,
+              }}
               transition={{ duration: 1, ease: 'easeInOut' }}
             />
           )}
